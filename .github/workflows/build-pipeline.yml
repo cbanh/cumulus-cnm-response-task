@@ -36,15 +36,15 @@ jobs:
       - name: Get Version
         id: get-version
         run: |
-          if [ -f version.txt ]; then
+          if [ -f release/version.txt ]; then
             echo "release exists"
-            echo "Version: $(cat version.txt)"
+            echo "Version: $(cat release/version.txt)"
           else
             echo "version.txt does not exist"
           fi
       - name: Commit pom.xml
         run: |
-          RELEASE_VERSION="$(cat version.txt)"
+          RELEASE_VERSION="$(cat release/version.txt)"
           git config user.name "podaac-cloud-IandA"
           echo 'git config user.name completed'
           git config user.email curtis.banh@gmail.com
