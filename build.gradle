@@ -3,7 +3,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile fileTree(dir: 'target/dependency/', include: '*.jar')
+    implementation fileTree(dir: 'target/dependency/', include: '*.jar')
 }
 
 task buildZip(type: Zip) {
