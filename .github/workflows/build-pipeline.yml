@@ -11,6 +11,9 @@ on:
 env:
   REGISTRY: ghcr.io
   ARTIFACT_BASE_NAME: cnmResponse
+  UPLOAD_URL: https://api.github.com/repos/podaac/cumulus-cnm-response-task
+  GITHUB_USER: cbanh
+
 
 jobs:
   # First job name
@@ -58,3 +61,15 @@ jobs:
           git status
           git push
           echo 'git pushed pom.xml with version: '$RELEASE_VERSION
+      - name: 
+        run: |
+          echo "*** Release Version is : "$RELEASE_VERSION
+          ls -la release
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B | sed 's/[[:space:]]/ /g' |sed "s/'/ /g")
+          echo "COMMIT MESSAGE is: "$COMMIT_MESSAGE
+          curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions","draft": false,"prerelease": false}' > release_create.out
+          cat release_create.out
+          ASSET_URL=$(cat release_create.out | grep upload_url |sed 's/^\s*"upload_url": "//' |sed 's/assets.*$/assets/')
+          cp release/*.zip .
+          curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
+	
