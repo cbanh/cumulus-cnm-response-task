@@ -11,7 +11,7 @@ task buildZip(type: Zip) {
     from compileJava
     from processResources
     into('lib') {
-        from configurations.runtimeOnly
+        from configurations.runtimeClasspath
     }
     archiveName 'cnmResponse.zip'
 }
