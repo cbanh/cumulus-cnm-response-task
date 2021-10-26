@@ -60,10 +60,9 @@ jobs:
           echo 'GIT_BRANCH:'$GIT_BRANCH
           git branch
           git status
-          git push
+          # git push
           echo 'git pushed pom.xml with version: '$RELEASE_VERSION
-      - name: 
-        run: |
+
           echo "*** Release Version is : "$RELEASE_VERSION
           ls -la release
           COMMIT_MESSAGE=$(git log -1 --pretty=%B | sed 's/[[:space:]]/ /g' |sed "s/'/ /g")
