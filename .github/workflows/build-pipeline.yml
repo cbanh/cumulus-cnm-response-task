@@ -74,4 +74,5 @@ jobs:
           cat release_create.out
           ASSET_URL=$(cat release_create.out | grep upload_url |sed 's/^\s*"upload_url": "//' |sed 's/assets.*$/assets/')
           cp release/*.zip .
+          echo 'curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"'
           curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
