@@ -1,0 +1,60 @@
+.name: Build
+
+on:
+  # Triggers the workflow on push events
+  push:
+    branches: [ develop, release/**, main, feature/**, master ]
+
+    # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  ARTIFACT_BASE_NAME: cnmResponse
+
+jobs:
+  # First job name
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '8.0.232'
+      - name: Install Python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install Python dependencies
+        run: |
+          pip3 install -r builder/requirements.txt
+      - name: Run Python builder
+        run: |
+          python3 builder/builder.py -d . -a ${{env.ARTIFACT_BASE_NAME}}
+      - name: Get Version
+        id: get-version
+        run: |
+          if [ -f version.txt ]; then
+            echo "release exists"
+            echo "Version: $(cat version.txt)"
+          else
+            echo "version.txt does not exist"
+          fi
+      - name: Commit pom.xml
+        run: |
+          RELEASE_VERSION="$(cat version.txt)"
+          git config user.name "podaac-cloud-IandA"
+          echo 'git config user.name completed'
+          git config user.email curtis.banh@gmail.com
+          echo 'git config email completed'
+          git commit -m 'Release:'$RELEASE_VERSION pom.xml
+          echo 'git committed pom.xml with: '$RELEASE_VERSION
+          echo 'About to push to branch : '$GIT_LOCAL_BRANCH
+          echo 'GIT_LOCAL_BRANCH:'$GIT_LOCAL_BRANCH
+          echo 'GIT_BRANCH:'$GIT_BRANCH
+          git branch
+          git status
+          git push
+          echo 'git pushed pom.xml with version: '$RELEASE_VERSION
