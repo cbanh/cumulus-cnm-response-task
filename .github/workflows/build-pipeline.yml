@@ -51,7 +51,7 @@ jobs:
             echo "version.txt does not exist"
           fi
       - name: Commit pom.xml
-        if: contains(github.ref, "master")
+        if: contains(github.ref, 'master')
         run: |
           RELEASE_VERSION="$(cat release/version.txt)"
           git config user.name "podaac-cloud-IandA"
