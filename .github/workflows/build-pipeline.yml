@@ -40,7 +40,6 @@ jobs:
       - name: Run Python builder
         run: |
           python3 builder/builder.py -d . -a ${{env.ARTIFACT_BASE_NAME}}
-          cp release/*.zip .
       - name: Get Version
         id: get-version
         run: |
@@ -73,6 +72,7 @@ jobs:
           RELEASE_VERSION="$(cat release/version.txt)"
           echo "*** Release Version is : "$RELEASE_VERSION
           ls -la release
+          cp release/*.zip .
           COMMIT_MESSAGE=$(git log -1 --pretty=%B | sed 's/[[:space:]]/ /g' |sed "s/'/ /g")
           echo "COMMIT MESSAGE is: "$COMMIT_MESSAGE          
           curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions","draft": false,"prerelease": false}' > release_create.out
@@ -85,6 +85,7 @@ jobs:
         if: ${{ !contains(github.ref, 'master') }}
         run: |
           RELEASE_VERSION="$(cat release/version.txt)-SNAPSHOT"
+          cp release/*.zip "${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
           curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions","draft": false,"prerelease": false}' > release_create.out
           cat release_create.out
           ASSET_URL=$(cat release_create.out | grep upload_url |sed 's/^\s*"upload_url": "//' |sed 's/assets.*$/assets/')
