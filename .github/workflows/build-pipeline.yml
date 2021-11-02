@@ -65,7 +65,7 @@ jobs:
           echo 'GIT_BRANCH:'$GIT_BRANCH
           git branch
           git status
-#          git push
+          # git push
           echo 'git pushed pom.xml with version: '$RELEASE_VERSION
       - name: Upload and Tag Release
         if: contains(github.ref, 'master')
