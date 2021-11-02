@@ -85,7 +85,7 @@ jobs:
               curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"
         if: ${{ !contains(github.ref, "master") }}
         steps:
-          -run: |
+          - run: |
               RELEASE_VERSION="$(cat release/version.txt)-SNAPSHOT"
               curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions","draft": false,"prerelease": false}' > release_create.out
               cat release_create.out
