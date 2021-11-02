@@ -83,6 +83,7 @@ jobs:
               echo "ASSET_URL is " $ASSET_URL              
               echo 'curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "$ASSET_URL?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"'
               curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"
+      - name: Upload and Tag SNAPSHOT  
         if: ${{ !contains(github.ref, "master") }}
         steps:
           - run: |
