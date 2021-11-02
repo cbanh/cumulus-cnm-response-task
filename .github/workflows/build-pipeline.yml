@@ -68,7 +68,7 @@ jobs:
           git push
           echo 'git pushed pom.xml with version: '$RELEASE_VERSION
       - name: Upload and Tag Release
-        if: contains(github.ref, "master")
+        if: contains(github.ref, 'master')
         run: |
           RELEASE_VERSION="$(cat release/version.txt)"
           echo "*** Release Version is : "$RELEASE_VERSION
