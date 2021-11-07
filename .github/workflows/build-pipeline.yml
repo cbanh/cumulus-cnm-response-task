@@ -101,13 +101,14 @@ jobs:
       #   uses: heinrichreimer/github-changelog-generator-action@v2.3
       #   with:
       #     token: ${{ secrets.GITHUB_TOKEN }} 
-      - name: Create Release
+      - name: Generate Changelog
         run: |
-          changelog="$(cat "CHANGELOG.md")
+          echo "change_log=$(cat CHANGELOG.md)" >> $GITHUB_ENV
+      - name: Create Release
         uses: actions/create-release@v1
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
-          body: $changelog
+          body: ${{ env.change_log }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
