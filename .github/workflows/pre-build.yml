@@ -18,7 +18,7 @@ env:
 jobs:
   # First job name
   build:
-    name: Build
+    name: PreBuild
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
