@@ -71,6 +71,10 @@ jobs:
       #     git status
       #     git push
       #     echo 'git pushed pom.xml with version: '$RELEASE_VERSION
+      - name: Generate Changelog
+        run: |
+          chlog=$(cat CHANGELOG.md)
+          echo "change_log=$(chlog)" >> $GITHUB_ENV
       - name: Upload and Tag Release
         if: contains(github.ref, 'master')
         run: |
@@ -80,7 +84,7 @@ jobs:
           cp release/*.zip .
           COMMIT_MESSAGE=$(git log -1 --pretty=%B | sed 's/[[:space:]]/ /g' |sed "s/'/ /g")
           echo "COMMIT MESSAGE is: "$COMMIT_MESSAGE          
-          curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions","draft": false,"prerelease": false}' > release_create.out
+          curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions ${{ env.change_log }}","draft": false,"prerelease": false}' > release_create.out
           cat release_create.out
           ASSET_URL=$(cat release_create.out | grep upload_url |sed 's/^\s*"upload_url": "//' |sed 's/assets.*$/assets/')
           echo "ASSET_URL is: " $ASSET_URL
@@ -101,15 +105,12 @@ jobs:
       #   uses: heinrichreimer/github-changelog-generator-action@v2.3
       #   with:
       #     token: ${{ secrets.GITHUB_TOKEN }} 
-      - name: Generate Changelog
-        run: |
-          chlog=$(cat CHANGELOG.md)
-          echo "change_log=$(chlog)" >> $GITHUB_ENV
-      - name: Create Release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          body: ${{ env.change_log }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      # - name: Create Release
+      #   uses: actions/create-release@v1
+      #   with:
+      #     tag_name: ${{ github.ref }}
+      #     release_name: ${{ github.ref }}
+      #     body: ${{ env.change_log }}
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
