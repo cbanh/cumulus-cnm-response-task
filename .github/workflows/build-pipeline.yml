@@ -103,7 +103,8 @@ jobs:
       #     token: ${{ secrets.GITHUB_TOKEN }} 
       - name: Generate Changelog
         run: |
-          echo "change_log=$(cat CHANGELOG.md)" >> $GITHUB_ENV
+          chlog=$(cat CHANGELOG.md)
+          echo "change_log=$(chlog)" >> $GITHUB_ENV
       - name: Create Release
         uses: actions/create-release@v1
         with:
