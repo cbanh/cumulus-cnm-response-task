@@ -97,7 +97,17 @@ jobs:
           echo "ASSET_URL is: " $ASSET_URL
           echo 'curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"'
           curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary "@${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip" "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
-      - name: "Generate release changelog"
-        uses: heinrichreimer/github-changelog-generator-action@v2.3
+      # - name: "Generate release changelog"
+      #   uses: heinrichreimer/github-changelog-generator-action@v2.3
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }} 
+      - name: Create Release
+        run: |
+          changelog="$(cat "CHANGELOG.md")
+        uses: actions/create-release@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }} 
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: $changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
