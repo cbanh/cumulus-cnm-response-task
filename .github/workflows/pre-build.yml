@@ -42,7 +42,3 @@ jobs:
           echo "git sha=$git_sha"
           new_ver="${{ steps.get-version.outputs.current_version }}+$git_sha"
           echo "software_version=$new_ver" >> $GITHUB_ENV
-      - name: Build new version
-        run: |
-          echo "New Version is: ${{ env.software_version }}"
-          python3 builder/builder2.py -d . -a ${{env.ARTIFACT_BASE_NAME}} -v ${{ env.software_version }}
