@@ -42,3 +42,4 @@ jobs:
       - name: Build new version
         run: |
           echo "New Version is: ${{ env.software_version }}"
+          python3 builder/builder2.py -d . -a ${{env.ARTIFACT_BASE_NAME}} -v ${{ env.software_version }}
