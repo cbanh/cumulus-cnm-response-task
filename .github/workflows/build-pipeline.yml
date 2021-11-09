@@ -57,7 +57,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/develop' }}
         run: |
           bump_ver="$(python3 builder/bump-version.py -v ${{ steps.get-version.outputs.current_version }})"
-          if [[ "bump_ver" == "None" ]; then
+          if [[ "$bump_ver" == "None" ]; then
             bump_ver=''
           fi
           new_ver="${base_ver}-alpha.bump_ver-SNAPSHOT"
