@@ -61,7 +61,27 @@ jobs:
             bump_ver='0'
           fi
           new_ver="${base_ver}-alpha.${bump_ver}-SNAPSHOT"
-          echo "software_version=$new_ver" >> $GITHUB_ENV      
+          echo "software_version=$new_ver" >> $GITHUB_ENV
+      - name: Bump rc version
+        # If triggered by push to a release branch
+        if: ${{ startsWith(github.ref, 'refs/heads/release/') }}
+        run: |
+          bump_ver="$(python3 builder/bump-version.py -v ${{ steps.get-version.outputs.current_version }})"
+          if [[ "$bump_ver" == "None" ]]; then
+            bump_ver='0'
+          fi
+          new_ver="${base_ver}-rc.${bump_ver}"
+          echo "software_version=$new_ver" >> $GITHUB_ENV
+      - name: Release version
+        # If triggered by push to the main branch
+        if: ${{ startsWith(github.ref, 'refs/heads/main') }}
+        env:
+          CURRENT_VERSION: ${{ steps.get-version.outputs.current_version }}
+        # Remove -rc.* from end of version string
+        # The ${string%%substring} syntax below deletes the longest match of $substring from back of $string.
+        run: |
+          new_ver="${CURRENT_VERSION%%-rc.*}"
+          echo "software_version=$new_ver" >> $GITHUB_ENV
       - name: Build new version
         run: |
           echo "New Version is: ${{ env.software_version }}"
@@ -92,7 +112,7 @@ jobs:
         run: |
           git config --global user.name 'podaac-cloud-IandA'
           git config --global user.email 'podaac-cloud-IandA@jpl.nasa.gov'
-          git commit -am "/version ${{ env.software_version }}"
+          git commit -m "/version ${{ env.software_version }}" pom.xml
           git push
       - name: Generate Changelog
         run: |
