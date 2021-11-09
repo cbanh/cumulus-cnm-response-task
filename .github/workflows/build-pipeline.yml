@@ -43,7 +43,7 @@ jobs:
         run: |
           echo ${{ steps.get-version.outputs.current_version }}
           base_ver = "$(python3 builder/bump-version.py -v ${{ steps.get-version.outputs.current_version }} --get-base)"
-          echo $base_ver
+          echo "$base_ver"
         
       - name: Bump pre-alpha version
         # If triggered by push to a feature branch
@@ -57,7 +57,7 @@ jobs:
         # If triggered by push to the develop branch
         if: ${{ github.ref == 'refs/heads/develop' }}
         run: |      
-          echo $base_ver
+          echo "$base_ver"
       - name: Build new version
         run: |
           echo "New Version is: ${{ env.software_version }}"
