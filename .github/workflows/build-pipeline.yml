@@ -43,21 +43,25 @@ jobs:
         run: |
           echo ${{ steps.get-version.outputs.current_version }}
           base_ver="$(python3 builder/bump-version.py -v ${{ steps.get-version.outputs.current_version }} --get-base)"
-          echo "$base_ver"
-        
+          echo "$base_ver" >> $GITHUB_ENV
       - name: Bump pre-alpha version
         # If triggered by push to a feature branch
         if: ${{ startsWith(github.ref, 'refs/heads/feature/') }}
         run: |
           git_sha="$(git rev-parse --short ${GITHUB_SHA})"          
           echo "git sha=$git_sha"
-          new_ver="${{ steps.get-version.outputs.current_version }}+$git_sha"
+          new_ver="${base_ver}+$git_sha"
           echo "software_version=$new_ver" >> $GITHUB_ENV
       - name: Bump alpha version
         # If triggered by push to the develop branch
         if: ${{ github.ref == 'refs/heads/develop' }}
-        run: |      
-          echo "$base_ver"
+        run: |
+          bump_ver="$(python3 builder/bump-version.py -v ${{ steps.get-version.outputs.current_version }})"
+          if [[ "bump_ver" == "None" ]; then
+            bump_ver=''
+          fi
+          new_ver="${base_ver}-alpha.bump_ver-SNAPSHOT"
+          echo "software_version=$new_ver" >> $GITHUB_ENV
       - name: Build new version
         run: |
           echo "New Version is: ${{ env.software_version }}"
