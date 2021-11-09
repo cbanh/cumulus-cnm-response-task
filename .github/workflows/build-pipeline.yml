@@ -42,7 +42,7 @@ jobs:
       - name: Show extracted Maven project version
         run: |
           echo ${{ steps.get-version.outputs.current_version }}
-          base_ver = "$(python3 builder/bump-version.py -v 2.0.0 --get-base)"
+          base_ver="$(python3 builder/bump-version.py -v 2.0.0 --get-base)"
           echo "$base_ver"
         
       - name: Bump pre-alpha version
