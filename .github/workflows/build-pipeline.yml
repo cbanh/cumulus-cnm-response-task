@@ -57,10 +57,10 @@ jobs:
         if: ${{ github.ref == 'refs/heads/develop' }}
         run: |
           bump_ver="$(python3 builder/bump-version.py -v ${{ steps.get-version.outputs.current_version }})"
-          if [[ "$bump_ver" == "None" ]; then
+          if [[ "$bump_ver" == "None" ]]; then
             bump_ver=''
           fi
-          new_ver="${base_ver}-alpha.bump_ver-SNAPSHOT"
+          new_ver="${base_ver}-alpha.${bump_ver}-SNAPSHOT"
           echo "software_version=$new_ver" >> $GITHUB_ENV
       - name: Commit Version Bump
         # If building develop, a release branch, or main then we commit the version bump back to the repo
