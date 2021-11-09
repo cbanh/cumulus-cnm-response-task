@@ -15,7 +15,6 @@ env:
   UPLOAD_URL: https://api.github.com/repos/cbanh/cumulus-cnm-response-task
   GITHUB_USER: cbanh
 
-
 jobs:
   # First job name
   build:
@@ -37,35 +36,69 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip3 install -r builder/requirements.txt
-      - name: Run Python builder
-        run: |
-          python3 builder/builder.py -d . -a ${{env.ARTIFACT_BASE_NAME}}
-      - name: Get Version
+      - name: Extract Maven project version
+        run: echo ::set-output name=current_version::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
         id: get-version
+      - name: Show extracted Maven project version
         run: |
-          if [ -f release/version.txt ]; then
-            echo "release exists"
-            echo "Version: $(cat release/version.txt)"
-          else
-            echo "version.txt does not exist"
+          echo ${{ steps.get-version.outputs.current_version }}
+          base_ver="$(python3 builder/bump-version.py -v ${{ steps.get-version.outputs.current_version }} --get-base)"
+          echo "base_ver=$base_ver" >> $GITHUB_ENV
+      - name: Bump pre-alpha version
+        # If triggered by push to a feature branch
+        if: ${{ startsWith(github.ref, 'refs/heads/feature/') }}
+        run: |
+          git_sha="$(git rev-parse --short ${GITHUB_SHA})"          
+          echo "git sha=$git_sha"
+          new_ver="${base_ver}+$git_sha"
+          echo "software_version=$new_ver" >> $GITHUB_ENV
+      - name: Bump alpha version
+        # If triggered by push to the develop branch
+        if: ${{ github.ref == 'refs/heads/develop' }}
+        run: |
+          bump_ver="$(python3 builder/bump-version.py -v ${{ steps.get-version.outputs.current_version }})"
+          if [[ "bump_ver" == "None" ]; then
+            bump_ver=''
           fi
-      - name: Commit pom.xml
-        if: contains(github.ref, 'master')
+          new_ver="${base_ver}-alpha.bump_ver-SNAPSHOT"
+          echo "software_version=$new_ver" >> $GITHUB_ENV
+      - name: Commit Version Bump
+        # If building develop, a release branch, or main then we commit the version bump back to the repo
+        if: |
+          github.ref == 'refs/heads/develop' ||
+          github.ref == 'refs/heads/main'    ||
+          startsWith(github.ref, 'refs/heads/release')
         run: |
-          RELEASE_VERSION="$(cat release/version.txt)"
-          git config user.name "podaac-cloud-IandA"
-          echo 'git config user.name completed'
-          git config user.email curtis.banh@gmail.com
-          echo 'git config email completed'
-          git commit -m 'Release:'$RELEASE_VERSION pom.xml
-          echo 'git committed pom.xml with: '$RELEASE_VERSION
-          echo 'About to push to branch : '$GIT_LOCAL_BRANCH
-          echo 'GIT_LOCAL_BRANCH:'$GIT_LOCAL_BRANCH
-          echo 'GIT_BRANCH:'$GIT_BRANCH
-          git branch
-          git status
-          # git push
-          echo 'git pushed pom.xml with version: '$RELEASE_VERSION
+          git config --global user.name 'podaac-cloud-IandA'
+          git config --global user.email 'podaac-cloud-IandA@jpl.nasa.gov'
+          git commit -am "/version ${{ env.software_version }}"
+          git push
+      - name: Build new version
+        run: |
+          echo "New Version is: ${{ env.software_version }}"
+          python3 builder/builder2.py -d . -a ${{env.ARTIFACT_BASE_NAME}} -v ${{ env.software_version }}
+      # - name: Commit pom.xml
+      #   if: contains(github.ref, 'master')
+      #   run: |
+      #     RELEASE_VERSION="$(cat release/version.txt)"
+      #     git config user.name "podaac-cloud-IandA"
+      #     echo 'git config user.name completed'
+      #     git config user.email curtis.banh@gmail.com
+      #     echo 'git config email completed'
+      #     git commit -m 'Release:'$RELEASE_VERSION pom.xml
+      #     echo 'git committed pom.xml with: '$RELEASE_VERSION
+      #     echo 'About to push to branch : '$GIT_LOCAL_BRANCH
+      #     echo 'GIT_LOCAL_BRANCH:'$GIT_LOCAL_BRANCH
+      #     echo 'GIT_BRANCH:'$GIT_BRANCH
+      #     git branch
+      #     git status
+      #     git push
+      #     echo 'git pushed pom.xml with version: '$RELEASE_VERSION
+      
+      - name: Generate Changelog
+        run: |
+          chlog=$(cat CHANGELOG.md)
+          echo "change_log=$(chlog)" >> $GITHUB_ENV
       - name: Upload and Tag Release
         if: contains(github.ref, 'master')
         run: |
@@ -75,20 +108,32 @@ jobs:
           cp release/*.zip .
           COMMIT_MESSAGE=$(git log -1 --pretty=%B | sed 's/[[:space:]]/ /g' |sed "s/'/ /g")
           echo "COMMIT MESSAGE is: "$COMMIT_MESSAGE          
-          curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions","draft": false,"prerelease": false}' > release_create.out
+          curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions ${{ env.change_log }}", "draft": false,"prerelease": false}' > release_create.out
           cat release_create.out
           ASSET_URL=$(cat release_create.out | grep upload_url |sed 's/^\s*"upload_url": "//' |sed 's/assets.*$/assets/')
           echo "ASSET_URL is: " $ASSET_URL
-          echo 'curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"'
-          curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary "@${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip" "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
+          echo 'curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"'
+          curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary "@${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip" "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
       - name: Upload and Tag SNAPSHOT  
         if: ${{ !contains(github.ref, 'master') }}
         run: |
-          RELEASE_VERSION="$(cat release/version.txt)-SNAPSHOT"
+          RELEASE_VERSION="$(cat release/version.txt)"
           cp release/*.zip "${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
-          curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions","draft": false,"prerelease": false}' > release_create.out
+          curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions","draft": false,"prerelease": false}' > release_create.out
           cat release_create.out
           ASSET_URL=$(cat release_create.out | grep upload_url |sed 's/^\s*"upload_url": "//' |sed 's/assets.*$/assets/')
           echo "ASSET_URL is: " $ASSET_URL
-          echo 'curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"'
-          curl -H "Authorization: token ${{secrets.GIT_UPLOAD_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary "@${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip" "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
+          echo 'curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"'
+          curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary "@${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip" "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
+      # - name: "Generate release changelog"
+      #   uses: heinrichreimer/github-changelog-generator-action@v2.3
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }} 
+      # - name: Create Release
+      #   uses: actions/create-release@v1
+      #   with:
+      #     tag_name: ${{ github.ref }}
+      #     release_name: ${{ github.ref }}
+      #     body: ${{ env.change_log }}
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
