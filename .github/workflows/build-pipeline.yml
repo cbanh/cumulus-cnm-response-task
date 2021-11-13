@@ -86,44 +86,27 @@ jobs:
         run: |
           echo "New Version is: ${{ env.software_version }}"
           python3 builder/builder2.py -d . -a ${{env.ARTIFACT_BASE_NAME}} -v ${{ env.software_version }}
-      # - name: Commit pom.xml
-      #   if: contains(github.ref, 'master')
-      #   run: |
-      #     RELEASE_VERSION="$(cat release/version.txt)"
-      #     git config user.name "podaac-cloud-IandA"
-      #     echo 'git config user.name completed'
-      #     git config user.email curtis.banh@gmail.com
-      #     echo 'git config email completed'
-      #     git commit -m 'Release:'$RELEASE_VERSION pom.xml
-      #     echo 'git committed pom.xml with: '$RELEASE_VERSION
-      #     echo 'About to push to branch : '$GIT_LOCAL_BRANCH
-      #     echo 'GIT_LOCAL_BRANCH:'$GIT_LOCAL_BRANCH
-      #     echo 'GIT_BRANCH:'$GIT_BRANCH
-      #     git branch
-      #     git status
-      #     git push
-      #     echo 'git pushed pom.xml with version: '$RELEASE_VERSION
       - name: Prepare Artifacts
         run: |
           artifact_file_name="${{ env.ARTIFACT_BASE_NAME }}-${{ env.software_version }}.zip"
           echo "ARTIFACT_FILE=$artifact_file_name" >> $GITHUB_ENV
           echo "LOOK HERE: $artifact_file_name"
           cp release/*.zip "$artifact_file_name"
-      - name: Upload and Tag Release
-        if: contains(github.ref, 'master')
-        run: |
-          RELEASE_VERSION="$(cat release/version.txt)"
-          echo "*** Release Version is : "$RELEASE_VERSION
-          ls -la release
-          cp release/*.zip .
-          COMMIT_MESSAGE=$(git log -1 --pretty=%B | sed 's/[[:space:]]/ /g' |sed "s/'/ /g")
-          echo "COMMIT MESSAGE is: "$COMMIT_MESSAGE          
-          curl -v -i -X POST -H "Content-Type:application/json" -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" ${UPLOAD_URL}/releases -d '{"tag_name":"v'${RELEASE_VERSION}'","target_commitish": "'${CURRENT_BRANCH}'","name": "v'${RELEASE_VERSION}'","body": "release version v'${RELEASE_VERSION}' created by Github Actions ${{ env.change_log }}", "draft": false,"prerelease": false}' > release_create.out
-          cat release_create.out
-          ASSET_URL=$(cat release_create.out | grep upload_url |sed 's/^\s*"upload_url": "//' |sed 's/assets.*$/assets/')
-          echo "ASSET_URL is: " $ASSET_URL
-          echo 'curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"'
-          curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary "@${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip" "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
+      - name: Create Release
+        id: create_release
+        if: ${{ contains(github.ref, 'master') }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: "v${{ env.software_version }}"
+          release_name: "Release v${{ env.software_version }} - ${{ github.ref }}"
+          body: |
+            Changes in this Release
+            - First Change - abc
+            - Second Change - def
+          draft: false
+          prerelease: false
       - name: Create Release
         id: create_release
         if: ${{ !contains(github.ref, 'master') }}
@@ -149,14 +132,6 @@ jobs:
           asset_path: "${{ env.ARTIFACT_FILE }}"
           asset_name: "${{ env.ARTIFACT_FILE }}"
           asset_content_type: application/zip
-      - name: Publish changelog
-        uses: notlmn/release-with-changelog@v2
-        with:
-          header: '### Changelog'
-          footer: 'Custom footer'
-          include-hash: true
-          include-range: true
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Commit Version Bump
         # If building develop, a release branch, or main then we commit the version bump back to the repo
         if: |
@@ -168,16 +143,11 @@ jobs:
           git config --global user.email 'podaac-cloud-IandA@jpl.nasa.gov'
           git commit -m "/version ${{ env.software_version }}" pom.xml
           git push
-          
-      # - name: "Generate release changelog"
-      #   uses: heinrichreimer/github-changelog-generator-action@v2.3
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }} 
-      # - name: Create Release
-      #   uses: actions/create-release@v1
-      #   with:
-      #     tag_name: ${{ github.ref }}
-      #     release_name: ${{ github.ref }}
-      #     body: ${{ env.change_log }}
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish changelog
+        uses: notlmn/release-with-changelog@v2
+        with:
+          header: '### Changelog'
+          footer: 'Custom footer'
+          include-hash: true
+          include-range: true
+          token: ${{ secrets.GITHUB_TOKEN }}
