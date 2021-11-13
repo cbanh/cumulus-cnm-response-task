@@ -137,6 +137,7 @@ jobs:
             Changes in this Release
             - First Change - abc
             - Second Change - def
+          body_path: CHANGELOG.md
           draft: false
           prerelease: true
       - name: Upload Release Asset
