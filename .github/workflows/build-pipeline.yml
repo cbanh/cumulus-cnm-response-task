@@ -117,7 +117,12 @@ jobs:
       - name: Generate Changelog
         run: |
           chlog=$(cat CHANGELOG.md)
-          echo "change_log=$(chlog)" >> $GITHUB_ENV
+          echo "change_log=${chlog}" >> $GITHUB_ENV
+      - name: Prepare Artifacts
+        run: |
+          artifact_file = "${{env.ARTIFACT_BASE_NAME}}-${{ env.software_version }}.zip"
+          echo "ARTIFACT_FILE=${artifact_file}" >> $GITHUB_ENV
+          cp release/*.zip "${ARTIFACT_FILE}"
       - name: Upload and Tag Release
         if: contains(github.ref, 'master')
         run: |
@@ -133,26 +138,21 @@ jobs:
           echo "ASSET_URL is: " $ASSET_URL
           echo 'curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip)" --data-binary @${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip "'${ASSET_URL}'?name=${{env.ARTIFACT_BASE_NAME}}-'${RELEASE_VERSION}'.zip"'
           curl -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" -H "Content-Type: $(file -b --mime-type ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip)" --data-binary "@${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip" "${ASSET_URL}?name=${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
-
       - name: Create Release
         id: create_release
         if: ${{ !contains(github.ref, 'master') }}
-        run: |
-          RELEASE_VERSION="$(cat release/version.txt)"
-          cp release/*.zip "${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip"
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: v${RELEASE_VERSION}
-          release_name: Release v${RELEASE_VERSION} - ${{ github.ref }}
+          tag_name: "v${{ env.software_version }}"
+          release_name: "Release v${{ env.software_version }} - ${{ github.ref }}"
           body: |
             Changes in this Release
             - First Change - abc
             - Second Change - def
           draft: false
           prerelease: true
-
       - name: Upload Release Asset
         id: upload-release-asset 
         uses: actions/upload-release-asset@v1
@@ -160,8 +160,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip
-          asset_name: ${{env.ARTIFACT_BASE_NAME}}-${RELEASE_VERSION}.zip
+          asset_path: "${ARTIFACT_FILE}"
+          asset_name: "${ARTIFACT_FILE}"
           asset_content_type: application/zip
           
       # - name: "Generate release changelog"
