@@ -137,7 +137,6 @@ jobs:
             Changes in this Release
             - First Change - abc
             - Second Change - def
-          body_path: CHANGELOG.md
           draft: false
           prerelease: true
       - name: Upload Release Asset
@@ -150,6 +149,14 @@ jobs:
           asset_path: "${{ env.ARTIFACT_FILE }}"
           asset_name: "${{ env.ARTIFACT_FILE }}"
           asset_content_type: application/zip
+      - name: Publish changelog
+        uses: notlmn/release-with-changelog@v2
+        with:
+          header: '### Changelog'
+          footer: 'Custom footer'
+          include-hash: true
+          include-range: true
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Commit Version Bump
         # If building develop, a release branch, or main then we commit the version bump back to the repo
         if: |
