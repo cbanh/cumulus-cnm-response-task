@@ -117,11 +117,11 @@ jobs:
       - name: Generate Changelog
         run: |
           chlog=$(cat CHANGELOG.md)
-          echo "change_log=${chlog}" >> $GITHUB_ENV
+          echo "change_log=$chlog" >> $GITHUB_ENV
       - name: Prepare Artifacts
         run: |
           artifact_file = "${{env.ARTIFACT_BASE_NAME}}-${{ env.software_version }}.zip"
-          echo "ARTIFACT_FILE=${artifact_file}" >> $GITHUB_ENV
+          echo "ARTIFACT_FILE=$artifact_file" >> $GITHUB_ENV
           cp release/*.zip "${ARTIFACT_FILE}"
       - name: Upload and Tag Release
         if: contains(github.ref, 'master')
