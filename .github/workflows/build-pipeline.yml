@@ -103,17 +103,6 @@ jobs:
       #     git status
       #     git push
       #     echo 'git pushed pom.xml with version: '$RELEASE_VERSION
-      - name: Commit Version Bump
-        # If building develop, a release branch, or main then we commit the version bump back to the repo
-        if: |
-          github.ref == 'refs/heads/develop' ||
-          github.ref == 'refs/heads/main'    ||
-          startsWith(github.ref, 'refs/heads/release')
-        run: |
-          git config --global user.name 'podaac-cloud-IandA'
-          git config --global user.email 'podaac-cloud-IandA@jpl.nasa.gov'
-          git commit -m "/version ${{ env.software_version }}" pom.xml
-          git push
       - name: Generate Changelog
         run: |
           chlog=$(cat CHANGELOG.md)
@@ -163,6 +152,17 @@ jobs:
           asset_path: "${ARTIFACT_FILE}"
           asset_name: "${ARTIFACT_FILE}"
           asset_content_type: application/zip
+      - name: Commit Version Bump
+        # If building develop, a release branch, or main then we commit the version bump back to the repo
+        if: |
+          github.ref == 'refs/heads/develop' ||
+          github.ref == 'refs/heads/main'    ||
+          startsWith(github.ref, 'refs/heads/release')
+        run: |
+          git config --global user.name 'podaac-cloud-IandA'
+          git config --global user.email 'podaac-cloud-IandA@jpl.nasa.gov'
+          git commit -m "/version ${{ env.software_version }}" pom.xml
+          git push
           
       # - name: "Generate release changelog"
       #   uses: heinrichreimer/github-changelog-generator-action@v2.3
