@@ -73,8 +73,8 @@ jobs:
           new_ver="${base_ver}-rc.${bump_ver}"
           echo "software_version=$new_ver" >> $GITHUB_ENV
       - name: Release version
-        # If triggered by push to the main branch
-        if: ${{ startsWith(github.ref, 'refs/heads/main') }}
+        # If triggered by push to the master branch
+        if: ${{ startsWith(github.ref, 'refs/heads/master') }}
         env:
           CURRENT_VERSION: ${{ steps.get-version.outputs.current_version }}
         # Remove -rc.* from end of version string
@@ -143,10 +143,10 @@ jobs:
           asset_name: "${{ env.ARTIFACT_FILE }}"
           asset_content_type: application/zip
       - name: Commit Version Bump
-        # If building develop, a release branch, or main then we commit the version bump back to the repo
+        # If building develop, a release branch, or master then we commit the version bump back to the repo
         if: |
           github.ref == 'refs/heads/develop' ||
-          github.ref == 'refs/heads/main'    ||
+          github.ref == 'refs/heads/master'  ||
           startsWith(github.ref, 'refs/heads/release')
         run: |
           git config --global user.name 'podaac-cloud-IandA'
