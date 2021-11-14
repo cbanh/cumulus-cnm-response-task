@@ -75,12 +75,8 @@ jobs:
       - name: Release version
         # If triggered by push to the master branch
         if: ${{ startsWith(github.ref, 'refs/heads/master') }}
-        env:
-          CURRENT_VERSION: ${{ steps.get-version.outputs.current_version }}
-        # Remove -rc.* from end of version string
-        # The ${string%%substring} syntax below deletes the longest match of $substring from back of $string.
         run: |
-          new_ver="${CURRENT_VERSION%%-rc.*}"
+          new_ver="${base_ver}"
           echo "software_version=$new_ver" >> $GITHUB_ENV
       - name: Build new version
         run: |
