@@ -102,7 +102,7 @@ jobs:
           release_name: "Release v${{ env.software_version }} - ${{ github.ref }}"
           body: |
             Changes in this release:
-            -
+            ${{ github.event.head_commit.message }}
           body_path: release.md
           draft: false
           prerelease: false
@@ -117,7 +117,7 @@ jobs:
           release_name: "Release v${{ env.software_version }} - ${{ github.ref }}"
           body: |
             Changes in this release:
-              - 
+            ${{ github.event.head_commit.message }}
           draft: false
           prerelease: true
       - name: Upload PreRelease Asset
