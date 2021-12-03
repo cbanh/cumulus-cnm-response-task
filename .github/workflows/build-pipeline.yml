@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GIT_UPLOAD_TOKEN }}
       - uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
